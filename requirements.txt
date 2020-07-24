@@ -1,0 +1,4 @@
+Pillow
+dload
+numpy
+opencv-python
