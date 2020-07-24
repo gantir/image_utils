@@ -24,9 +24,13 @@ logger = logging.getLogger(__name__)
 
 def _calculate_image_size(old_size, new_max_size):
   width, height = old_size
+  if width < new_max_size or height < new_max_size:
+    return old_size
+
   ratio = width/height
   new_width = new_max_size
   new_height = ceil(new_max_size/ratio)
+
   if width < height:
     new_width = ceil(new_max_size*ratio)
     new_height = new_max_size
@@ -82,6 +86,8 @@ def rename_files(src_img_dir, dest_img_dir):
       img_index+=1
 
 if __name__ == "__main__":
+    print(_calculate_image_size((280,320),448))
+    exit()
     cur_dir_path = os.path.dirname(os.path.realpath(__file__))
     original_images = os.path.join(cur_dir_path,'data/original')
     renamed_images = os.path.join(cur_dir_path,'data/renamed')
