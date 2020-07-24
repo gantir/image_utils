@@ -12,7 +12,7 @@ logging.basicConfig(
     filemode="a",
     format="%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s",
     datefmt="%H:%M:%S",
-    level=logging.DEBUG,
+    level=logging.INFO,
 )
 
 logger = logging.getLogger(__name__)
@@ -68,6 +68,8 @@ def alter_image(
 
     except Exception as e:
         logger.exception(e)
+        print(e)
+        pass
 
 
 def rename_files(src_img_dir, dest_img_dir):
@@ -113,19 +115,7 @@ def rename_files(src_img_dir, dest_img_dir):
             img_index += 1
 
 
-if __name__ == "__main__":
-    cur_dir_path = os.path.dirname(os.path.realpath(__file__))
-    original_images = os.path.join(cur_dir_path, "data/original")
-    renamed_images = os.path.join(cur_dir_path, "data/renamed")
-    resized_images = os.path.join(cur_dir_path, "data/resized")
-    rename_files(original_images, renamed_images)
-
-    # uncomment the below only to resize files
-
-    # all_images = _get_all_images_recursive(renamed_images) # noqa: E800
-    # for i, src_img in enumerate(all_images):                  # noqa: E800
-    #   alter_image(src_img, src_img.replace("renamed","resized")) # noqa: E800
-
+def _get_img_class_map():
     with open("data/original_rename_map.csv", "r") as f, open(
         "data/img_class.csv", "w"
     ) as ic:
@@ -141,3 +131,23 @@ if __name__ == "__main__":
                         row[4],
                     ]
                 )
+
+
+if __name__ == "__main__":
+    cur_dir_path = os.path.dirname(os.path.realpath(__file__))
+    original_images = os.path.join(cur_dir_path, "data/original")
+    renamed_images = os.path.join(cur_dir_path, "data/renamed")
+    resized_images = os.path.join(cur_dir_path, "data/resized")
+    # rename_files(original_images, renamed_images) # noqa
+
+    # uncomment the below only to resize files
+
+    all_images = _get_all_images_recursive(renamed_images)  # noqa: E800
+    for i, src_img in enumerate(all_images):  # noqa: E800
+        print(i, src_img)
+        alter_image(
+            src_img, src_img.replace("renamed", "resized")
+        )  # noqa: E800
+        exit()
+
+    # _get_img_class_map() # noqa
