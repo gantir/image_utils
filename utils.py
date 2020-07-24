@@ -114,8 +114,6 @@ def rename_files(src_img_dir, dest_img_dir):
 
 
 if __name__ == "__main__":
-    print(_calculate_image_size((280, 320), 448))
-    exit()
     cur_dir_path = os.path.dirname(os.path.realpath(__file__))
     original_images = os.path.join(cur_dir_path, "data/original")
     renamed_images = os.path.join(cur_dir_path, "data/renamed")
