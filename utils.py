@@ -148,6 +148,5 @@ if __name__ == "__main__":
         alter_image(
             src_img, src_img.replace("renamed", "resized")
         )  # noqa: E800
-        exit()
 
     # _get_img_class_map() # noqa
