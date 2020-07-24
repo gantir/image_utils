@@ -52,32 +52,42 @@ def alter_bg_image(src_img_dir: str, src_img_filename: str, dest_img_folder: str
   # altered_image.show()
   altered_image.save(os.path.join(dest_img_folder,src_img_filename))
 
-def alter_fg_image(src_img_dir, src_img_filename, dest_img_folder, dest_img_folder_gray, max_size=200):
-  image_path = os.path.join(src_img_dir,src_img_filename)
+def _calculate_image_size(old_size, new_max_size):
+  width, height = old_size
+  ratio = width/height
+  new_width = new_max_size
+  new_height = ceil(new_max_size/ratio)
+  if width < height:
+    new_width = ceil(new_max_size*ratio)
+    new_height = new_max_size
+
+  return (new_width, new_height)
+
+def _get_all_images_recursive(image_dir:str)-> list:
+  return sorted([f for f in list(glob.glob(image_dir+"/**", recursive=True)) if os.path.isfile(f) and -1 == f.find(".DS_Store")])
+
+def alter_image(src_img_file_path, dest_img_file_path, max_size=448, convert_gray_scale=False):
   try:
     # https://pillow.readthedocs.io/en/latest/handbook/concepts.html#modes
-    org_img = Image.open(image_path)
-    org_img_gray = org_img.convert('LA')
+    org_img = Image.open(src_img_file_path).convert("RGB")
+    if convert_gray_scale:
+      # org_img = org_img.convert('LA')
+      org_img = ImageOps.grayscale(org_img)
 
-    width,height = org_img.size
-    ratio = width/height
-    new_width = max_size
-    new_height = ceil(max_size/ratio)
-    if width < height:
-      new_width = ceil(max_size*ratio)
-      new_height = max_size
-    # print(ratio,src_img_filename,[width,height],[new_width,new_height])
-    altered_image = ImageOps.fit(org_img,(new_width,new_height), method=Image.ANTIALIAS)
-    altered_image.save(os.path.join(dest_img_folder,src_img_filename))
+    new_size = _calculate_image_size(org_img.size, max_size)
 
-    altered_image_gray = ImageOps.fit(org_img_gray,(new_width,new_height), method=Image.ANTIALIAS)
-    altered_image_gray.save(os.path.join(dest_img_folder_gray,src_img_filename))
+    altered_image = ImageOps.fit(org_img,new_size, method=Image.ANTIALIAS)
+    os.makedirs(os.path.dirname(dest_img_file_path), exist_ok=True)
+
+    dest_img_file_path = dest_img_file_path.replace("png","jpg").replace("webp","jpg")
+    altered_image.save(dest_img_file_path)
+
   except Exception as e:
-    print(e)
-    pass
+    logger.exception(e)
 
 def rename_files(src_img_dir, dest_img_dir):
-  img_files = sorted(list(glob.glob(src_img_dir+"/**", recursive=True)))
+  img_files = _get_all_images_recursive(src_img_dir)
+
   with open("data/original_rename_map.csv","w") as f, open("data/img_class.csv", "w") as ic:
     mapping_file = csv.writer(f,lineterminator=os.linesep, quoting=csv.QUOTE_ALL)
     img_class_file = csv.writer(ic,lineterminator=os.linesep, quoting=csv.QUOTE_ALL)
@@ -85,23 +95,23 @@ def rename_files(src_img_dir, dest_img_dir):
 
     img_index = 0
     for i, img in enumerate(img_files):
-      if os.path.isfile(img) and -1 == img.find(".DS_Store"):
-        src_img_name, src_img_extension = os.path.splitext(img)
-        if src_img_extension == ".jpeg":
-          src_img_extension = ".jpg"
+      src_img_name, src_img_extension = os.path.splitext(img)
+      if src_img_extension == ".jpeg":
+        src_img_extension = ".jpg"
 
-        dest_image_name = "img{:05d}{}".format(img_index+1,src_img_extension)
-        img_class = src_img_name.replace(src_img_dir,"").split("/")[1]
-        os.makedirs(os.path.join(dest_img_dir,img_class), exist_ok=True)
+      dest_image_name = "img{:05d}{}".format(img_index+1,src_img_extension)
+      img_class = src_img_name.replace(src_img_dir,"").split("/")[1]
+      os.makedirs(os.path.join(dest_img_dir,img_class), exist_ok=True)
 
-        src_img_path = os.path.join(src_img_dir, img)
-        dest_image_path = os.path.join(dest_img_dir,img_class,dest_image_name)
+      src_img_path = os.path.join(src_img_dir, img)
+      dest_image_path = os.path.join(dest_img_dir,img_class,dest_image_name)
 
-        shutil.copyfile(src_img_path, dest_image_path)
-        mapping_file.writerow([img_index,src_img_path,dest_image_path,dest_image_name,img_class])
-        img_class_file.writerow([dest_image_name,img_class])
+      # shutil.copyfile(src_img_path, dest_image_path)
+      os.rename(src_img_path, dest_image_path)
+      mapping_file.writerow([img_index,src_img_path,dest_image_path,dest_image_name,img_class])
+      img_class_file.writerow([dest_image_name,img_class])
 
-        img_index+=1
+      img_index+=1
 
 def convert2jgp(src_img_path):
   return None
@@ -219,8 +229,15 @@ def generate_images(source, dest, max_rand=360, image_size=(448,448), save_image
 
 if __name__ == "__main__":
     cur_dir_path = os.path.dirname(os.path.realpath(__file__))
+    original_images = os.path.join(cur_dir_path,'data/original')
+    renamed_images = os.path.join(cur_dir_path,'data/renamed')
+    resized_images = os.path.join(cur_dir_path,'data/resized')
+    rename_files(original_images, renamed_images)
 
-    rename_files(os.path.join(cur_dir_path,'data/original'),os.path.join(cur_dir_path,'data/renamed'))
+    all_images = _get_all_images_recursive(renamed_images)
+    for i, src_img in enumerate(all_images):
+      alter_image(src_img, src_img.replace("renamed","resized"))
+
     # alter_image()
     # bg_img_files = sorted(os.listdir('/Users/projects/Downloads/s14-15/images/bg/original/'))
     # for img in bg_img_files:
