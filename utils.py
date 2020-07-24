@@ -58,9 +58,8 @@ def alter_image(src_img_file_path, dest_img_file_path, max_size=448, convert_gra
 def rename_files(src_img_dir, dest_img_dir):
   img_files = _get_all_images_recursive(src_img_dir)
 
-  with open("data/original_rename_map.csv","w") as f, open("data/img_class_renamed.csv", "w") as ic:
+  with open("data/original_rename_map.csv","w") as f:
     mapping_file = csv.writer(f,lineterminator=os.linesep, quoting=csv.QUOTE_ALL)
-    img_class_file = csv.writer(ic,lineterminator=os.linesep, quoting=csv.QUOTE_ALL)
     mapping_file.writerow(["id","source","destination","dest_file_name","img_class"])
 
     img_index = 0
@@ -79,7 +78,6 @@ def rename_files(src_img_dir, dest_img_dir):
       # shutil.copyfile(src_img_path, dest_image_path)
       os.rename(src_img_path, dest_image_path)
       mapping_file.writerow([img_index,src_img_path,dest_image_path,dest_image_name,img_class])
-      img_class_file.writerow([dest_image_name,img_class])
 
       img_index+=1
 
@@ -89,14 +87,16 @@ if __name__ == "__main__":
     renamed_images = os.path.join(cur_dir_path,'data/renamed')
     resized_images = os.path.join(cur_dir_path,'data/resized')
     rename_files(original_images, renamed_images)
-    # rename_files(renamed_images, renamed_images)
 
-    all_images = _get_all_images_recursive(renamed_images)
-    for i, src_img in enumerate(all_images):
-      alter_image(src_img, src_img.replace("renamed","resized"))
+    # uncomment the below only to resize files
+
+    # all_images = _get_all_images_recursive(renamed_images)
+    # for i, src_img in enumerate(all_images):
+    #   alter_image(src_img, src_img.replace("renamed","resized"))
 
     with open("data/original_rename_map.csv","r") as f, open("data/img_class.csv", "w") as ic:
       rename_map = csv.reader(f)
-      img_class_map = csv.writer(ic)
-      for row in rename_map:
-        img_class_map.writerow([row[3].replace("png","jpg").replace("webp","jpg"),row[4]])
+      img_class_map = csv.writer(ic,lineterminator=os.linesep, quoting=csv.QUOTE_ALL)
+      for i, row in enumerate(rename_map):
+        if 0 != i:
+          img_class_map.writerow([row[3].replace("png","jpg").replace("webp","jpg"),row[4]])
